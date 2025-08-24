@@ -20,7 +20,7 @@
       <div class="h-10 w-10 rounded-2xl bg-slate-900 text-white grid place-items-center font-bold">SBX</div>
       <div>
         <h1 class="text-xl sm:text-2xl font-semibold tracking-tight">VAT Registration Checker</h1>
-        <p class="text-sm text-slate-500 -mt-0.5">Quick triage for compulsory vs voluntary VAT registration (UK)</p>
+        <p class="text-sm text-slate-500 -mt-0.5">Quick triage for compulsory VAT registration (UK)</p>
       </div>
     </div>
     <div class="hidden sm:block text-xs text-slate-500">"Small Business Experts"</div>
@@ -59,7 +59,7 @@
           </label>
 
           <label>Rolling 12-month turnover — all supplies (gross, excl. VAT)
-            <input id="turn12" type="number" min="0" step="100" value="60000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
+            <input id="turn12" type="number" min="0" step="100" value="80000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
           </label>
 
           <div class="grid grid-cols-3 gap-3">
@@ -74,36 +74,39 @@
               <div class="relative group">
                 <input id="pctZero" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
                 <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-                <div class="tip"><b>Zero-rated (0%)</b>: still taxable for the threshold (e.g., some food, children’s clothes). Input VAT generally reclaimable.</div>
+                <div class="tip"><b>Zero-rated (0%)</b>: still taxable for the threshold (e.g., some food, children’s clothes). Input VAT is generally reclaimable.</div>
               </div>
             </label>
             <label class="flex flex-col">% Exempt
               <div class="relative group">
                 <input id="pctExempt" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
                 <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-                <div class="tip"><b>Exempt</b>: does not count toward the threshold (e.g., many financial/education/medical services). Input VAT recovery restricted.</div>
+                <div class="tip"><b>Exempt</b>: does not count toward the threshold (e.g., many financial/education/medical services). Input VAT recovery is restricted.</div>
               </div>
             </label>
           </div>
           <p class="text-xs text-slate-600 -mt-2">Most UK businesses are <b>standard-rated</b>. <b>Zero-rated</b> sales are still <i>taxable</i> for the threshold; <b>exempt</b> are not.</p>
           <div id="mixWarn" class="hidden text-xs -mt-1 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2"></div>
 
+          <label class="flex flex-col">Taxable sales last month (standard + zero-rated, excl. VAT)
+            <input id="lastMonthTaxable" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" placeholder="e.g. 2,000">
+          </label>
+
           <label class="flex flex-col">Expected taxable sales in next 30 days (standard + zero-rated, excl. VAT)
-            <input id="next30" type="number" min="0" step="100" value="5000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
+            <input id="next30" type="number" min="0" step="100" value="50000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
             <span class="mt-1 text-xs text-slate-500">
-              <span class="badge">Statutory test</span> HMRC’s future test is the <b>next 30 days alone</b>. We also show an
-              <span class="badge">Advisory</span> estimate combining ≈ prior 11 months + next month below.
+              <span class="badge">Future test</span> We check <b>last 11 months + next 30 days</b> against the £90k threshold.
             </span>
           </label>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label>Avg monthly taxable sales (optional)
-              <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" placeholder="e.g. 5000">
+              <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" placeholder="auto from 12m">
               <p class="text-xs text-slate-500 mt-1">Defaults to your current run-rate (taxable 12m ÷ 12).</p>
             </label>
             <label>Expected monthly growth % (optional)
               <input id="growthPct" type="number" min="-100" step="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
-              <p class="text-xs text-slate-500 mt-1">Used only for the forecast below (taxable sales, compounded monthly).</p>
+              <p class="text-xs text-slate-500 mt-1">Used only for the forecast (planning aid).</p>
             </label>
           </div>
 
@@ -133,20 +136,10 @@
             <div class="text-xs text-slate-500 mt-1">Threshold: £90,000</div>
           </div>
           <div class="rounded-xl border border-slate-200 p-3">
-            <div class="text-slate-500 text-xs">30-day future test (next 30 days only)</div>
-            <div id="thirtyFuture" class="text-base font-semibold">£0</div>
+            <div class="text-slate-500 text-xs">Future test (last 11m + next 30d)</div>
+            <div id="futureTest" class="text-base font-semibold">£0</div>
             <div class="text-xs text-slate-500 mt-1">Must register if ≥ £90,000</div>
           </div>
-        </div>
-
-        <!-- New advisory projection card -->
-        <div class="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
-          <div class="flex items-center gap-2">
-            <div class="text-slate-500 text-xs">Advisory 12-month projection (≈ prior 11m + next month)</div>
-            <span class="badge bg-slate-50">Advisory</span>
-          </div>
-          <div id="advisory12" class="text-base font-semibold">£0</div>
-          <div id="advisoryNote" class="text-xs text-slate-500 mt-1"></div>
         </div>
 
         <div class="grid grid-cols-3 gap-3 text-sm mt-3">
@@ -189,7 +182,7 @@
     <section id="contact" class="mt-8">
       <div class="bg-white/80 backdrop-blur rounded-2xl shadow-sm ring-1 ring-slate-200 p-6">
         <h3 class="text-lg font-semibold mb-2">Next steps with SBX</h3>
-        <p class="text-sm text-slate-600 mb-4">Want us to sanity-check your position or handle registration? We’ll confirm whether you must register now, discuss voluntary registration pros/cons, and set you up in QuickBooks for smooth VAT returns.</p>
+        <p class="text-sm text-slate-600 mb-4">Want us to sanity-check your position or handle registration? We’ll confirm whether you must register now and set you up for smooth VAT returns.</p>
         <ul class="text-sm list-disc pl-5 text-slate-700 space-y-1">
           <li>Threshold monitoring template (rolling 12 months)</li>
           <li>Sector-specific VAT treatment guidance (e.g., aesthetics, trades)</li>
@@ -212,17 +205,17 @@
     const GBP = (n) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', maximumFractionDigits: 0 }).format(Number(n)||0);
     const pctfmt = (n) => ((Number(n) || 0).toFixed(1) + '%');
 
-    // Closed-form months to reach remaining with monthly growth g (>= -1)
+    // Closed-form months to reach remaining with monthly growth g
     function monthsToHit(remaining, m0, g) {
       if (remaining <= 0) return 0;
-      if (m0 <= 0 && g <= 0) return null;
+      if ((m0 || 0) <= 0 && (g || 0) <= 0) return null;
       const gg = Number(g) || 0;
       if (gg > 0 && m0 > 0) {
         const k = Math.ceil(Math.log((remaining * gg) / m0 + 1) / Math.log(1 + gg));
         return (isFinite(k) && k > 0) ? k : null;
       }
       if (gg === 0 && m0 > 0) return Math.ceil(remaining / m0);
-      // negative growth (>-100%): fallback safe loop
+      // negative growth fallback
       let sum = 0, n = 0, mk = m0;
       while (n < 120 && sum < remaining && mk > 0) { n++; sum += mk; mk *= (1 + gg); }
       return (sum >= remaining) ? n : null;
@@ -233,36 +226,32 @@
       const std = Number(document.getElementById('pctStd').value) || 0;
       const zero = Number(document.getElementById('pctZero').value) || 0;
       const ex = Number(document.getElementById('pctExempt').value) || 0;
+      const lastMonthTaxable = Number(document.getElementById('lastMonthTaxable').value);
+      const hasLastMonth = !isNaN(lastMonthTaxable) && document.getElementById('lastMonthTaxable').value !== '';
       const next30 = Number(document.getElementById('next30').value) || 0;
       const avgMonthlyInput = Number(document.getElementById('avgMonthly').value);
       const hasAvg = !isNaN(avgMonthlyInput) && document.getElementById('avgMonthly').value !== '';
       const growthPct = Number(document.getElementById('growthPct').value) || 0;
 
+      // Mix check
       const mixSum = std + zero + ex;
       const mixWarn = document.getElementById('mixWarn');
-      if (mixSum !== 100) {
-        mixWarn.classList.remove('hidden');
-        mixWarn.textContent = `Heads up: your rate mix adds to ${mixSum}%. Adjust so Standard + Zero + Exempt = 100%.`;
-      } else {
-        mixWarn.classList.add('hidden');
-      }
+      if (mixSum !== 100) { mixWarn.classList.remove('hidden'); mixWarn.textContent = `Heads up: your rate mix adds to ${mixSum}%. Adjust so Standard + Zero + Exempt = 100%.`; }
+      else { mixWarn.classList.add('hidden'); }
 
       // Taxable = standard + zero
       const taxablePct = (std + zero) / 100;
       const taxable12 = turn12 * taxablePct;
 
-      // Defaults/derived helpers
+      // Average taxable/month for forecast + placeholder
       const avgTaxableMonthly = hasAvg ? avgMonthlyInput : (taxable12 / 12);
       document.getElementById('avgMonthly').placeholder = `e.g. ${Math.round(taxable12 / 12)}`;
 
-      // Statutory 30-day test is ALONE
-      const thirtyFuture = next30;
+      // Future test = prior 11 months + expected next 30 days
+      const prior11 = Math.max(0, taxable12 - (hasLastMonth ? lastMonthTaxable : avgTaxableMonthly));
+      const futureTotal = prior11 + next30;
 
-      // Advisory 12m projection ≈ (prior 11 months taxable) + next month
-      const prior11Approx = Math.max(0, taxable12 - avgTaxableMonthly);
-      const advisory12 = prior11Approx + next30;
-
-      // Est VAT (illustrative)
+      // VAT illustrations (very rough)
       const outVAT = (turn12 * (std/100)) * 0.20;
       const inVAT = (Number(document.getElementById('vatCosts').value) > 0)
         ? Number(document.getElementById('vatCosts').value)
@@ -270,40 +259,29 @@
 
       // Update UI blocks
       document.getElementById('tt12').textContent = GBP(taxable12);
-      document.getElementById('thirtyFuture').textContent = GBP(thirtyFuture);
-      document.getElementById('advisory12').textContent = GBP(advisory12);
-      document.getElementById('advisoryNote').textContent =
-        advisory12 >= THRESHOLD
-        ? 'Advisory: Your projected rolling 12 months (≈ prior 11m + next month) meets/exceeds the threshold.'
-        : 'Advisory: Projected rolling 12 months (≈ prior 11m + next month) remains below the threshold.';
+      document.getElementById('futureTest').textContent = GBP(futureTotal);
       document.getElementById('mix').textContent = `${pctfmt(std)} std / ${pctfmt(zero)} zero / ${pctfmt(ex)} exempt`;
       document.getElementById('mixSum').textContent = mixSum;
       document.getElementById('outVat').textContent = GBP(Math.round(outVAT));
       document.getElementById('inVat').textContent = GBP(Math.round(inVAT));
 
       const pex = document.getElementById('pexNote');
-      if (ex > 0) {
-        pex.classList.remove('hidden');
-        pex.textContent = ex >= 50
-          ? 'High proportion of exempt supplies — likely partially exempt with limited input VAT recovery.'
-          : 'Some exempt supplies present — partial exemption may restrict input VAT recovery.';
-      } else {
-        pex.classList.add('hidden');
-      }
+      if (ex > 0) { pex.classList.remove('hidden'); pex.textContent = ex >= 50 ? 'High proportion of exempt supplies — likely partially exempt with limited input VAT recovery.' : 'Some exempt supplies present — partial exemption may restrict input VAT recovery.'; }
+      else { pex.classList.add('hidden'); }
 
-      // Status banner (statutory tests only)
+      // Status banner
       const box = document.getElementById('statusBox');
       const label = document.getElementById('statusLabel');
       const detail = document.getElementById('statusDetail');
       box.className = box.className.replace(/bg-(red|amber|emerald).*?text-.*?ring-.*?/g, '');
 
       if (taxable12 >= THRESHOLD) {
-        label.textContent = 'Register now (rolling 12-month threshold breached)';
-        detail.textContent = 'Your taxable turnover over the last 12 months exceeds £90,000. You must notify HMRC and register.';
+        label.textContent = 'Register now (12-month test breached)';
+        detail.textContent = 'Your taxable turnover over the past 12 months exceeds £90,000. You must notify HMRC and register.';
         box.className += ' bg-red-600/10 text-red-700 ring-red-400/40';
-      } else if (thirtyFuture >= THRESHOLD) {
-        label.textContent = 'Register now (30-day future test breached)';
-        detail.textContent = 'You expect your taxable sales in the next 30 days alone to exceed £90,000. Registration applies from when the expectation arose.';
+      } else if (futureTotal >= THRESHOLD) {
+        label.textContent = 'Register now (future test: last 11m + next 30d breached)';
+        detail.textContent = 'Your prior 11 months plus the next 30 days is expected to exceed £90,000. You must notify HMRC within 30 days.';
         box.className += ' bg-red-600/10 text-red-700 ring-red-400/40';
       } else if (taxable12 >= THRESHOLD * 0.9) {
         label.textContent = 'Borderline — monitor closely';
@@ -315,7 +293,7 @@
         box.className += ' bg-emerald-500/10 text-emerald-700 ring-emerald-400/40';
       }
 
-      // Growth forecast (closed form where possible)
+      // Growth forecast (months to £90k) — planning aid only
       const remaining = Math.max(0, THRESHOLD - taxable12);
       let forecastText = 'Not enough monthly taxable sales to project a date yet.';
       if (taxable12 >= THRESHOLD) {
@@ -331,11 +309,13 @@
 
       // Save for copy
       window.__sbx = {
-        turn12, std, zero, ex, taxable12, next30, outVAT, inVAT,
-        advisory12,
+        turn12, std, zero, ex, taxable12,
+        lastMonthTaxable: (hasLastMonth ? lastMonthTaxable : null),
+        next30, futureTotal,
         business: document.getElementById('biz').value || '(not provided)',
         industry: document.getElementById('industry').value,
-        notes: document.getElementById('notes').value || 'n/a'
+        notes: document.getElementById('notes').value || 'n/a',
+        outVAT, inVAT
       };
     }
 
@@ -346,17 +326,16 @@
         `Business: ${s.business || '(not provided)'}`,
         `Industry: ${s.industry || ''}`,
         `Rolling 12-month turnover (all supplies): ${GBP(s.turn12||0)}`,
-        `Mix: ${(s.std||0).toFixed?.(1)||s.std||0}% standard / ${(s.zero||0).toFixed?.(1)||s.zero||0}% zero / ${(s.ex||0).toFixed?.(1)||s.ex||0}% exempt`,
+        `Taxable mix assumed: ${(s.std||0).toFixed?.(1)||s.std||0}% standard / ${(s.zero||0).toFixed?.(1)||s.zero||0}% zero / ${(s.ex||0).toFixed?.(1)||s.ex||0}% exempt`,
         `Taxable turnover for threshold (12m): ${GBP(s.taxable12||0)}`,
-        `30-day statutory test (next 30 days alone): ${GBP(s.next30||0)}`,
-        `Advisory 12-month projection (≈ prior 11m + next month): ${GBP(s.advisory12||0)}`,
+        `Future test (last 11m + next 30d): ${GBP(s.futureTotal||0)}`,
         `Est. output VAT (illustrative): ${GBP(Math.round(s.outVAT||0))}`,
-        `Est. input VAT recoverable (assumed): ${GBP(Math.round(s.inVat||s.inVAT||0))}`,
+        `Est. input VAT recoverable (assumed): ${GBP(Math.round(s.inVAT||0))}`,
         `Notes: ${s.notes}`,
         '',
         'General guidance only — not tax advice.'
       ];
-      const summary = lines.join("\n"); // correct newline
+      const summary = lines.join("\n");
       navigator.clipboard.writeText(summary).then(() => {
         alert('Summary copied to clipboard ✔');
       }).catch(() => {
@@ -365,7 +344,7 @@
     }
 
     // wire up
-    ['biz','industry','turn12','pctStd','pctZero','pctExempt','next30','avgMonthly','growthPct','vatCosts','notes']
+    ['biz','industry','turn12','pctStd','pctZero','pctExempt','lastMonthTaxable','next30','avgMonthly','growthPct','vatCosts','notes']
       .forEach(id => document.getElementById(id).addEventListener('input', compute));
     document.getElementById('copyBtn').addEventListener('click', copySummary);
     document.getElementById('year').textContent = new Date().getFullYear();
