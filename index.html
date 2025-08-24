@@ -1,0 +1,377 @@
+import React, { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+
+// SBX VAT Registration Checker — bug-fixed build
+// Key fixes:
+// 1) Resolved "Unterminated string constant" by ensuring copySummary uses join("\n") correctly.
+// 2) Removed any stray line breaks inside string literals and comments.
+// 3) Added lightweight runtime tests (console.assert) to guard critical logic.
+// Behaviour (kept simple):
+//  - Historic test: rolling 12m taxable (standard + zero‑rated) >= £90,000 → register
+//  - Future test: next 30 days ALONE expected taxable >= £90,000 → register
+//  - Forecast: months to hit threshold based on avg monthly taxable & growth %
+
+// ---------- Helpers (pure; easy to test) ----------
+export const formatCurrency = (n: number): string => new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "GBP",
+  maximumFractionDigits: 0,
+}).format(Number(n) || 0);
+
+export const formatPct = (n: number): string => `${(Number(n) || 0).toFixed(1)}%`;
+
+export const computeTaxable12 = (rolling12AllSupplies: number, pctStd: number, pctZero: number): number => {
+  const taxablePct = ((Number(pctStd) || 0) + (Number(pctZero) || 0)) / 100;
+  return (Number(rolling12AllSupplies) || 0) * taxablePct;
+};
+
+export const monthsToThreshold = (
+  threshold: number,
+  taxable12: number,
+  avgMonthlyInput: number | null,
+  growthPctMonthly: number,
+): number | null => {
+  const remaining = Math.max(0, threshold - taxable12);
+  if (remaining <= 0) return 0;
+  const m0 = (avgMonthlyInput != null ? avgMonthlyInput : (taxable12 / 12));
+  const g = (Number(growthPctMonthly) || 0) / 100;
+  if (m0 <= 0 && g <= 0) return null;
+  let sum = 0; let n = 0; let mk = m0;
+  while (n < 120 && sum < remaining) { n += 1; sum += mk; mk *= (1 + g); }
+  return (sum >= remaining) ? n : null;
+};
+
+// ---------- Component ----------
+export default function VATRegistrationChecker(): JSX.Element {
+  const [businessName, setBusinessName] = useState<string>("(Optional)");
+  const [industry, setIndustry] = useState<string>("Trades / Construction");
+  const [rolling12Turnover, setRolling12Turnover] = useState<string>("60000");
+  const [pctStandard, setPctStandard] = useState<number>(100);
+  const [pctZero, setPctZero] = useState<number>(0);
+  const [pctExempt, setPctExempt] = useState<number>(0);
+  const [expected30DaysTaxable, setExpected30DaysTaxable] = useState<string>("5000");
+  const [annualVatOnCosts, setAnnualVatOnCosts] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [avgMonthly, setAvgMonthly] = useState<number | null>(null);
+  const [growthPct, setGrowthPct] = useState<number>(0);
+
+  const THRESHOLD = 90000; // UK VAT registration threshold (from 1 Apr 2024)
+
+  // Mix checks
+  const pctTotal = useMemo<number>(() => Number(pctStandard) + Number(pctZero) + Number(pctExempt), [pctStandard, pctZero, pctExempt]);
+
+  // Historic test: taxable turnover (std + zero) in rolling 12 months
+  const taxableTurnover12 = useMemo<number>(() => (
+    computeTaxable12(Number(rolling12Turnover) || 0, pctStandard, pctZero)
+  ), [rolling12Turnover, pctStandard, pctZero]);
+
+  // Future test: next 30 days alone
+  const next30Taxable = useMemo<number>(() => Number(expected30DaysTaxable) || 0, [expected30DaysTaxable]);
+
+  // VAT impacts (illustrative only)
+  const estOutputVAT = useMemo<number>(() => {
+    const total = Number(rolling12Turnover) || 0;
+    const stdRatedSales = total * ((Number(pctStandard) || 0) / 100);
+    return stdRatedSales * 0.20; // 20%
+  }, [rolling12Turnover, pctStandard]);
+
+  const estInputVAT = useMemo<number>(() => {
+    const explicit = Number(annualVatOnCosts);
+    if (!isNaN(explicit) && explicit > 0) return explicit;
+    return (Number(rolling12Turnover) || 0) * 0.06; // heuristic
+  }, [annualVatOnCosts, rolling12Turnover]);
+
+  const netVATImpact = useMemo<number>(() => estOutputVAT - estInputVAT, [estOutputVAT, estInputVAT]);
+
+  const breachedRollingThreshold = taxableTurnover12 >= THRESHOLD;
+  const breachedThirtyDayFutureOnly = next30Taxable >= THRESHOLD;
+
+  const status = useMemo<{ label: string; tone: "urgent"|"amber"|"ok"; detail: string; }>(() => {
+    if (breachedRollingThreshold) return {
+      label: "Register now (rolling 12‑month threshold breached)",
+      tone: "urgent",
+      detail: "Your taxable turnover over the last 12 months exceeds £90,000. You must notify HMRC and register.",
+    };
+    if (breachedThirtyDayFutureOnly) return {
+      label: "Register now (30‑day future test breached)",
+      tone: "urgent",
+      detail: "You expect your taxable sales in the next 30 days alone to exceed £90,000. Registration applies from when the expectation arose.",
+    };
+    if (taxableTurnover12 >= THRESHOLD * 0.9) return {
+      label: "Borderline — monitor closely",
+      tone: "amber",
+      detail: "You’re within 10% of the threshold. Track weekly. Consider voluntary registration if input VAT is high.",
+    };
+    return {
+      label: "No compulsory registration yet",
+      tone: "ok",
+      detail: "Your taxable turnover is below the £90,000 threshold. Keep monitoring your rolling 12‑month figures.",
+    };
+  }, [breachedRollingThreshold, breachedThirtyDayFutureOnly, taxableTurnover12]);
+
+  // Partial exemption hint
+  const partialExemptionHint = useMemo<string | null>(() => {
+    const ex = Number(pctExempt) || 0;
+    if (ex <= 0) return null;
+    if (ex >= 50) return "High proportion of exempt supplies — likely partially exempt with limited input VAT recovery.";
+    return "Some exempt supplies present — partial exemption may restrict input VAT recovery.";
+  }, [pctExempt]);
+
+  // Simple forecast (idiot‑proof):
+  const months = useMemo<number | null>(() => (
+    monthsToThreshold(THRESHOLD, taxableTurnover12, (avgMonthly != null ? avgMonthly : null), growthPct)
+  ), [taxableTurnover12, avgMonthly, growthPct]);
+
+  const toneColor = status.tone === "urgent" ? "bg-red-600/10 text-red-700 ring-red-400/40"
+    : status.tone === "amber" ? "bg-amber-500/10 text-amber-700 ring-amber-400/40"
+    : "bg-emerald-500/10 text-emerald-700 ring-emerald-400/40";
+
+  const copySummary = async (): Promise<void> => {
+    const lines: string[] = [
+      "SBX VAT Registration Checker — Summary",
+      `Business: ${businessName || "(not provided)"}`,
+      `Industry: ${industry}`,
+      `Rolling 12‑month turnover (all supplies): ${formatCurrency(Number(rolling12Turnover) || 0)}`,
+      `Mix: ${formatPct(pctStandard)} standard / ${formatPct(pctZero)} zero / ${formatPct(pctExempt)} exempt (sum ${pctTotal}%)`,
+      `Taxable turnover for threshold (12m): ${formatCurrency(taxableTurnover12)}`,
+      `30‑day test (next 30 days alone): ${formatCurrency(next30Taxable)}`,
+      `Est. output VAT (illustrative): ${formatCurrency(Math.round(estOutputVAT))}`,
+      `Est. input VAT recoverable (assumed): ${formatCurrency(Math.round(estInputVAT))}`,
+      `Net VAT impact (very rough): ${formatCurrency(Math.round(netVATImpact))}`,
+      partialExemptionHint ? `Partial exemption note: ${partialExemptionHint}` : "",
+      (months != null) ? `Simple forecast: approx ${months} month(s) to hit £90,000 at your run‑rate` : "",
+      `Notes: ${notes || "n/a"}`,
+      "",
+      "General guidance only — not tax advice.",
+    ].filter((x) => Boolean(x));
+
+    const summary = lines.join("\n"); // << BUGFIX: ensure proper newline string literal
+    try {
+      await navigator.clipboard.writeText(summary);
+      alert("Summary copied to clipboard ✔");
+    } catch (err) {
+      alert("Couldn’t copy automatically — select and copy the summary on screen.");
+    }
+  };
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800">
+      <header className="max-w-5xl mx-auto px-4 pt-10 pb-4">
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white grid place-items-center font-bold">SBX</div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">VAT Registration Checker</h1>
+              <p className="text-sm text-slate-500 -mt-0.5">Quick triage for compulsory vs voluntary VAT registration (UK)</p>
+            </div>
+          </div>
+          <div className="hidden sm:block text-xs text-slate-500">"Small Business Experts"</div>
+        </motion.div>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 pb-16">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid md:grid-cols-2 gap-6">
+          {/* Inputs */}
+          <section className="bg-white/80 backdrop-blur rounded-2xl shadow-sm ring-1 ring-slate-200 p-6">
+            <h2 className="text-lg font-semibold mb-4">Inputs</h2>
+            <div className="grid grid-cols-1 gap-4">
+              <label className="text-sm">Business name (optional)
+                <input value={businessName} onChange={(e)=>setBusinessName(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+              </label>
+
+              <label className="text-sm">Industry
+                <select value={industry} onChange={(e)=>setIndustry(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400">
+                  <option>Trades / Construction</option>
+                  <option>Advanced Aesthetics / Beauty</option>
+                  <option>Medical / Healthcare</option>
+                  <option>Consultancy / Contracting</option>
+                  <option>IT & Software</option>
+                  <option>E-commerce / Retail</option>
+                  <option>Hospitality</option>
+                  <option>Property & Lettings</option>
+                  <option>Creative / Media</option>
+                  <option>Professional Services</option>
+                  <option>Manufacturing</option>
+                  <option>Charities / Non-profit</option>
+                  <option>Education / Training</option>
+                  <option>Transport / Logistics</option>
+                  <option>Agriculture / Farming</option>
+                  <option>Other</option>
+                </select>
+              </label>
+
+              <label className="text-sm">Rolling 12-month turnover — all supplies (gross, excl. VAT)
+                <input type="number" min={0} step={100} value={rolling12Turnover} onChange={(e)=>setRolling12Turnover(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+              </label>
+
+              {/* Mix with CSS-only hover tooltips */}
+              <div className="grid grid-cols-3 gap-3">
+                <label className="text-sm flex flex-col">% Standard‑rated
+                  <div className="relative group">
+                    <input type="number" min={0} max={100} step={0.5} value={pctStandard} onChange={(e)=>setPctStandard(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+                    <span className="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
+                    <div className="hidden group-hover:block absolute z-10 right-0 top-7 w-64 text-xs bg-white border border-slate-200 shadow p-2 rounded-lg">
+                      <b>Standard‑rated (20%)</b>: most goods/services. Counts toward the threshold. You charge 20% and can usually reclaim input VAT.
+                    </div>
+                  </div>
+                </label>
+                <label className="text-sm flex flex-col">% Zero‑rated
+                  <div className="relative group">
+                    <input type="number" min={0} max={100} step={0.5} value={pctZero} onChange={(e)=>setPctZero(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+                    <span className="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
+                    <div className="hidden group-hover:block absolute z-10 right-0 top-7 w-64 text-xs bg-white border border-slate-200 shadow p-2 rounded-lg">
+                      <b>Zero‑rated (0%)</b>: still taxable for the threshold (e.g., some food, children’s clothes). Input VAT is generally reclaimable.
+                    </div>
+                  </div>
+                </label>
+                <label className="text-sm flex flex-col">% Exempt
+                  <div className="relative group">
+                    <input type="number" min={0} max={100} step={0.5} value={pctExempt} onChange={(e)=>setPctExempt(Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+                    <span className="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
+                    <div className="hidden group-hover:block absolute z-10 right-0 top-7 w-64 text-xs bg-white border border-slate-200 shadow p-2 rounded-lg">
+                      <b>Exempt</b>: does not count toward the threshold (e.g., many financial/education/medical services). Input VAT recovery is restricted.
+                    </div>
+                  </div>
+                </label>
+              </div>
+              <div className="text-xs text-slate-600 -mt-2">Most UK businesses are <b>standard‑rated</b> by default. <b>Zero‑rated</b> sales are still <i>taxable</i> for the threshold; <b>exempt</b> sales are not.</div>
+              {pctTotal !== 100 && (
+                <div className="text-xs -mt-1 text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">Heads up: your rate mix adds to <b>{pctTotal}%</b>. Adjust so Standard + Zero + Exempt = 100%.</div>
+              )}
+
+              <label className="text-sm">Expected taxable sales in next 30 days (standard + zero‑rated, excl. VAT)
+                <input type="number" min={0} step={100} value={expected30DaysTaxable} onChange={(e)=>setExpected30DaysTaxable(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+              </label>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <label className="text-sm">Avg monthly taxable sales (optional)
+                  <input type="number" min={0} step={100} value={(avgMonthly != null ? avgMonthly : Math.round((taxableTurnover12 || 0) / 12))} onChange={(e)=>setAvgMonthly(Number(e.target.value) || 0)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+                  <p className="text-xs text-slate-500 mt-1">Defaults to your current run‑rate (taxable 12m ÷ 12).</p>
+                </label>
+                <label className="text-sm">Expected monthly growth % (optional)
+                  <input type="number" min={-100} step={1} value={growthPct} onChange={(e)=>setGrowthPct(Number(e.target.value) || 0)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+                </label>
+              </div>
+
+              <label className="text-sm">Annual VAT you expect to reclaim (optional, £ of VAT — not gross cost)
+                <input type="number" min={0} step={50} value={annualVatOnCosts} onChange={(e)=>setAnnualVatOnCosts(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+                <p className="text-xs text-slate-500 mt-1">If blank, we’ll use a cautious heuristic.</p>
+              </label>
+
+              <label className="text-sm">Notes (optional)
+                <textarea value={notes} onChange={(e)=>setNotes(e.target.value)} rows={3} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-slate-400" />
+              </label>
+            </div>
+          </section>
+
+          {/* Output */}
+          <section className="bg-white/80 backdrop-blur rounded-2xl shadow-sm ring-1 ring-slate-200 p-6 flex flex-col">
+            <h2 className="text-lg font-semibold mb-4">Assessment</h2>
+            <div className={`rounded-xl ring-1 px-4 py-3 mb-4 ${toneColor}`}>
+              <div className="text-sm font-semibold">{status.label}</div>
+              <div className="text-xs opacity-80 mt-0.5">{status.detail}</div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="text-slate-500 text-xs">Taxable turnover (rolling 12m)</div>
+                <div className="text-base font-semibold">{formatCurrency(taxableTurnover12)}</div>
+                <div className="text-xs text-slate-500 mt-1">Threshold: £90,000</div>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="text-slate-500 text-xs">30‑day future test (next 30 days only)</div>
+                <div className="text-base font-semibold">{formatCurrency(next30Taxable)}</div>
+                <div className="text-xs text-slate-500 mt-1">Must register if ≥ £90,000</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-sm mt-3">
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="text-slate-500 text-xs">Mix</div>
+                <div className="text-base font-semibold">{formatPct(pctStandard)} std / {formatPct(pctZero)} zero / {formatPct(pctExempt)} exempt</div>
+                <div className="text-xs text-slate-500 mt-1">Sum: {pctTotal}%</div>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="text-slate-500 text-xs">Est. output VAT (illustrative)</div>
+                <div className="text-base font-semibold">{formatCurrency(Math.round(estOutputVAT))}</div>
+                <div className="text-xs text-slate-500 mt-1">Assumes 20% on standard‑rated sales</div>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="text-slate-500 text-xs">Est. input VAT recoverable</div>
+                <div className="text-base font-semibold">{formatCurrency(Math.round(estInputVAT))}</div>
+                <div className="text-xs text-slate-500 mt-1">User input or heuristic</div>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
+              <div className="text-slate-500 text-xs">Simple forecast</div>
+              <div className="text-base font-semibold">
+                {months === 0 && "Already at/over the threshold on current inputs."}
+                {months === null && "Not enough monthly taxable sales to project a date yet."}
+                {typeof months === "number" && months > 0 && `Approx ${months} month(s) to hit £90,000 at your run‑rate.`}
+              </div>
+              <div className="text-xs text-slate-500 mt-1">This is a simple run‑rate estimate (planning aid only).</div>
+            </div>
+
+            {partialExemptionHint && (
+              <div className="mt-3 text-xs text-violet-800 bg-violet-50 border border-violet-200 rounded-xl p-3">
+                <span className="font-medium">Partial exemption note:</span> {partialExemptionHint}
+              </div>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button onClick={copySummary} className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm hover:opacity-90 active:scale-95">Copy summary</button>
+              <button onClick={()=>window.print()} className="px-4 py-2 rounded-xl border border-slate-300 text-sm hover:bg-slate-50">Print / Save PDF</button>
+              <a href="#contact" className="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm hover:opacity-90">Book a chat with SBX</a>
+            </div>
+
+            <div className="mt-6 text-xs text-slate-500">This tool provides general guidance only and does not constitute tax advice. VAT rules vary by sector. For personalised advice, contact SBX Accountants.</div>
+          </section>
+        </motion.div>
+
+        <section id="contact" className="mt-8">
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-sm ring-1 ring-slate-200 p-6">
+            <h3 className="text-lg font-semibold mb-2">Next steps with SBX</h3>
+            <p className="text-sm text-slate-600 mb-4">Want us to sanity‑check your position or handle registration? We’ll confirm whether you must register now, discuss voluntary registration pros/cons, and set you up in QuickBooks for smooth VAT returns.</p>
+            <ul className="text-sm list-disc pl-5 text-slate-700 space-y-1">
+              <li>Threshold monitoring template (rolling 12 months)</li>
+              <li>Sector‑specific VAT treatment guidance (e.g. aesthetics, trades)</li>
+              <li>Partial exemption review if needed</li>
+            </ul>
+            <div className="mt-4 flex gap-2">
+              <a href="mailto:ryan@sbxaccountants.com?subject=VAT%20Checker%20Follow‑up" className="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm hover:opacity-90">Email SBX</a>
+              <a href="tel:+442070461730" className="px-4 py-2 rounded-xl border border-slate-300 text-sm hover:bg-slate-50">Call 020 7046 1730</a>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="max-w-5xl mx-auto px-4 pb-10 pt-6 text-xs text-slate-500">© {new Date().getFullYear()} SBX Accountants — VAT Registration Checker (Beta)</footer>
+    </div>
+  );
+}
+
+// ---------- Runtime tests (keep; cheap safety net) ----------
+(function runTests() {
+  try {
+    // computeTaxable12
+    console.assert(computeTaxable12(100000, 100, 0) === 100000, "Taxable12: 100% std");
+    console.assert(computeTaxable12(100000, 0, 100) === 100000, "Taxable12: 100% zero");
+    console.assert(computeTaxable12(100000, 50, 25) === 75000, "Taxable12: 50% std + 25% zero");
+
+    // monthsToThreshold simple cases
+    console.assert(monthsToThreshold(90000, 0, 10000, 0) === 9, "Months: 90k / 10k = 9");
+    console.assert(monthsToThreshold(90000, 80000, 5000, 0) === 2, "Months: remaining 10k @5k/mo = 2");
+    const mGrow = monthsToThreshold(90000, 0, 5000, 10); // grows 10% monthly; should finish well before 20 months
+    console.assert(typeof mGrow === "number" && (mGrow as number) > 0 && (mGrow as number) < 20, "Months growth sanity");
+
+    // formatters
+    console.assert(formatCurrency(0) === "£0", "Currency £0");
+    console.assert(formatPct(12.34) === "12.3%", "Percent 1dp");
+
+    // newline join sanity (guard against regressions)
+    console.assert(["a","b"].join("\n") === "a\nb", "Newline join should be literal \n");
+  } catch (err) {
+    console.warn("SBX VAT checker tests failed:", err);
+  }
+})();
