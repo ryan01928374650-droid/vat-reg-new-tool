@@ -26,13 +26,7 @@
       --sbx-muted: #334155;     /* slate-700 */
     }
     body { font-family: 'Montserrat', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: var(--sbx-bg); color: var(--sbx-text); }
-    .tip { position:absolute; display:none; z-index:20; right:.5rem; top:1.75rem; width:18rem; font-size:.78rem;
-           background:#fff; border:1px solid var(--sbx-border); border-radius:.5rem; padding:.6rem; box-shadow:0 8px 24px rgba(0,0,0,.08);}
-    .group:hover .tip { display:block; }
-    .badge { font-size:.72rem; border-radius:.375rem; padding:.15rem .45rem; border:1px solid rgba(0,0,0,.08); background: var(--sbx-accent-50); color: var(--sbx-accent); }
-    .info-dot { position:absolute; right:.5rem; top:.5rem; width:1.1rem; height:1.1rem; border-radius:9999px;
-                border:1px solid #cbd5e1; color:#64748b; font-size:.7rem; display:grid; place-items:center; cursor:help; background:#fff; }
-    .card { background: var(--sbx-card); backdrop-filter: blur(2px); border:1px solid var(--sbx-border); border-radius:1rem; }
+    .card { background: var(--sbx-card); backdrop-filter: blur(2px); border:1px solid var(--sbx-border); border-radius:1rem; overflow: visible; }
     .banner { border-radius:1rem; padding:.75rem 1rem; border:1px solid transparent; }
     .banner--ok    { background: rgba(5,150,105,.08); color:#065f46; border-color: rgba(5,150,105,.35); }
     .banner--warn  { background: rgba(217,119,6,.10); color:#92400e; border-color: rgba(217,119,6,.35); }
@@ -40,6 +34,19 @@
     .muted { color: var(--sbx-muted); }
     .section-title { color:var(--sbx-primary); }
     .divider { height:1px; background: var(--sbx-border); margin: 1rem 0; }
+
+    /* Tooltips: appear above the control, high z-index, avoid covering next column */
+    .tip {
+      position:absolute; display:none; z-index:50;
+      right:0; bottom: calc(100% + .5rem); top:auto;
+      width:18rem; font-size:.78rem;
+      background:#fff; border:1px solid var(--sbx-border);
+      border-radius:.5rem; padding:.6rem; box-shadow:0 8px 24px rgba(0,0,0,.08);
+    }
+    .group:hover .tip { display:block; }
+    .badge { font-size:.72rem; border-radius:.375rem; padding:.15rem .45rem; border:1px solid rgba(0,0,0,.08); background: var(--sbx-accent-50); color: var(--sbx-accent); }
+    .info-dot { position:absolute; right:.5rem; top:.5rem; width:1.1rem; height:1.1rem; border-radius:9999px;
+                border:1px solid #cbd5e1; color:#64748b; font-size:.7rem; display:grid; place-items:center; cursor:help; background:#fff; }
   </style>
 </head>
 <body>
@@ -51,85 +58,87 @@
   </header>
 
   <main class="max-w-5xl mx-auto px-4 pb-16 space-y-6">
-    <!-- ====== Registration checker ====== -->
+    <!-- ====== Registration checker (two columns) ====== -->
     <section class="card p-6">
       <h2 class="text-lg font-semibold mb-4 section-title">Registration checker</h2>
 
-      <!-- Inputs (checker) -->
-      <div class="grid grid-cols-1 gap-4 text-sm">
-        <label>Business name (optional)
-          <input id="biz" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-        </label>
-
-        <label>Industry
-          <select id="industry" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-            <option>Trades / Construction</option>
-            <option>Advanced Aesthetics / Beauty</option>
-            <option>Medical / Healthcare</option>
-            <option>Consultancy / Contracting</option>
-            <option>IT & Software</option>
-            <option>E-commerce / Retail</option>
-            <option>Hospitality</option>
-            <option>Property & Lettings</option>
-            <option>Creative / Media</option>
-            <option>Professional Services</option>
-            <option>Manufacturing</option>
-            <option>Charities / Non-profit</option>
-            <option>Education / Training</option>
-            <option>Transport / Logistics</option>
-            <option>Agriculture / Farming</option>
-            <option>Other</option>
-          </select>
-        </label>
-
-        <label>Rolling 12-month income (excl. VAT)
-          <input id="turn12" type="number" min="0" step="100" value="80000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-        </label>
-
-        <label class="flex flex-col">Expected income in next 30 days (excl. VAT)
-          <input id="next30" type="number" min="0" step="100" value="5000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-          <span class="mt-1 text-xs muted">
-            <span class="badge">Future test</span> We check <b>last 11 months (estimated) + next 30 days</b> against the £90k threshold.
-          </span>
-        </label>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <label>Avg monthly income (optional)
-            <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300" placeholder="auto from 12m">
-            <p class="text-xs muted mt-1">Defaults to your current run-rate (12m ÷ 12).</p>
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Left: inputs -->
+        <div class="grid grid-cols-1 gap-4 text-sm">
+          <label>Business name (optional)
+            <input id="biz" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
           </label>
-          <label>Expected monthly growth % (optional)
-            <input id="growthPct" type="number" min="-100" step="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-            <p class="text-xs muted mt-1">Used only for the forecast (planning aid).</p>
+
+          <label>Industry
+            <select id="industry" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+              <option>Trades / Construction</option>
+              <option>Advanced Aesthetics / Beauty</option>
+              <option>Medical / Healthcare</option>
+              <option>Consultancy / Contracting</option>
+              <option>IT & Software</option>
+              <option>E-commerce / Retail</option>
+              <option>Hospitality</option>
+              <option>Property & Lettings</option>
+              <option>Creative / Media</option>
+              <option>Professional Services</option>
+              <option>Manufacturing</option>
+              <option>Charities / Non-profit</option>
+              <option>Education / Training</option>
+              <option>Transport / Logistics</option>
+              <option>Agriculture / Farming</option>
+              <option>Other</option>
+            </select>
           </label>
+
+          <label>Rolling 12-month income (excl. VAT)
+            <input id="turn12" type="number" min="0" step="100" value="80000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+          </label>
+
+          <label class="flex flex-col">Expected income in next 30 days (excl. VAT)
+            <input id="next30" type="number" min="0" step="100" value="5000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+            <span class="mt-1 text-xs muted">
+              <span class="badge">Future test</span> We check <b>last 11 months (estimated) + next 30 days</b> against the £90k threshold.
+            </span>
+          </label>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label>Avg monthly income (optional)
+              <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300" placeholder="auto from 12m">
+              <p class="text-xs muted mt-1">Defaults to your current run-rate (12m ÷ 12).</p>
+            </label>
+            <label>Expected monthly growth % (optional)
+              <input id="growthPct" type="number" min="-100" step="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+              <p class="text-xs muted mt-1">Used only for the forecast (planning aid).</p>
+            </label>
+          </div>
         </div>
-      </div>
 
-      <!-- Status + figures -->
-      <div class="divider"></div>
+        <!-- Right: results -->
+        <div>
+          <div id="statusBox" class="banner banner--ok mb-4">
+            <div id="statusLabel" class="text-sm font-semibold">No compulsory registration yet</div>
+            <div id="statusDetail" class="text-xs opacity-90">Your rolling 12-month income is below the £90,000 threshold.</div>
+          </div>
 
-      <div id="statusBox" class="banner banner--ok mb-4">
-        <div id="statusLabel" class="text-sm font-semibold">No compulsory registration yet</div>
-        <div id="statusDetail" class="text-xs opacity-90">Your rolling 12-month income is below the £90,000 threshold.</div>
-      </div>
+          <div class="grid grid-cols-2 gap-3 text-sm">
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-slate-700 text-xs">Rolling 12-month income</div>
+              <div id="tt12" class="text-base font-semibold">£0</div>
+              <div class="text-xs text-slate-700 mt-1">Threshold: £90,000</div>
+            </div>
+            <div class="rounded-xl border border-slate-200 p-3">
+              <div class="text-slate-700 text-xs">Future test (last 11m est. + next 30d)</div>
+              <div id="futureTest" class="text-base font-semibold">£0</div>
+              <div class="text-xs text-slate-700 mt-1">Must register if ≥ £90,000</div>
+            </div>
+          </div>
 
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        <div class="rounded-xl border border-slate-200 p-3">
-          <div class="text-slate-700 text-xs">Rolling 12-month income</div>
-          <div id="tt12" class="text-base font-semibold">£0</div>
-          <div class="text-xs text-slate-700 mt-1">Threshold: £90,000</div>
+          <div class="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
+            <div class="text-slate-700 text-xs">Simple forecast</div>
+            <div id="forecast" class="text-base font-semibold">Not enough monthly income to project a date yet.</div>
+            <div class="text-xs text-slate-700 mt-1">Uses monthly income and growth (compounded). Planning aid only.</div>
+          </div>
         </div>
-        <div class="rounded-xl border border-slate-200 p-3">
-          <div class="text-slate-700 text-xs">Future test (last 11m est. + next 30d)</div>
-          <div id="futureTest" class="text-base font-semibold">£0</div>
-          <div class="text-xs text-slate-700 mt-1">Must register if ≥ £90,000</div>
-        </div>
-      </div>
-
-      <div class="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
-        <div class="text-slate-700 text-xs">Simple forecast</div>
-        <div id="forecast" class="text-base font-semibold">Not enough monthly income to project a date yet.</div>
-        <div class="text-xs text-slate-700 mt-1">Uses monthly income and growth (compounded). Planning aid only.</div>
       </div>
     </section>
 
@@ -143,25 +152,25 @@
           <div class="relative group">
             <input id="pctStd" type="number" min="0" max="100" step="0.5" value="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
             <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-            <div class="tip"><b>Standard-rated (20%)</b>: used here only to illustrate output VAT after registration. Does <u>not</u> affect the registration tests.</div>
+            <div class="tip"><b>Standard-rated (20%)</b>: used only to illustrate output VAT after registration. Does <u>not</u> affect the registration tests.</div>
           </div>
         </label>
         <label class="flex flex-col">% Zero-rated (informational)
           <div class="relative group">
             <input id="pctZero" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
             <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-            <div class="tip"><b>Zero-rated (0%)</b>: included in income, but only informs output VAT illustration here.</div>
+            <div class="tip"><b>Zero-rated (0%)</b>: included in income, but here only informs VAT illustration.</div>
           </div>
         </label>
         <label class="flex flex-col">% Exempt (informational)
           <div class="relative group">
             <input id="pctExempt" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
             <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-            <div class="tip"><b>Exempt</b>: excluded for output VAT and may restrict input VAT recovery (partial exemption).</div>
+            <div class="tip"><b>Exempt</b>: excluded from output VAT; may restrict input VAT recovery (partial exemption).</div>
           </div>
         </label>
       </div>
-      <p class="text-xs muted -mt-2">Percentages above are for <b>illustration only</b> and do not alter the registration tests.</p>
+      <p class="text-xs muted mt-2">Percentages above are for <b>illustration only</b> and do not alter the registration tests.</p>
       <div id="mixWarn" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2"></div>
 
       <!-- VAT cards -->
@@ -174,7 +183,7 @@
 
         <div class="rounded-xl border border-slate-200 p-3 relative group">
           <div class="info-dot">i</div>
-          <div class="tip"><b>Output VAT</b>: VAT you charge customers on the standard-rated portion (here shown as 20% × standard-rated income).</div>
+          <div class="tip"><b>Output VAT</b>: VAT you charge customers on the standard-rated portion (illustrative: 20% × standard-rated income).</div>
           <div class="text-slate-700 text-xs">Est. output VAT (illustrative)</div>
           <div id="outVat" class="text-base font-semibold">£0</div>
           <div class="text-xs text-slate-700 mt-1">Assumes 20% on standard-rated portion</div>
@@ -248,10 +257,10 @@
 
     function compute() {
       // Checker inputs
-      const turn12 = Number(document.getElementById('turn12').value) || 0; // rolling 12m income (as per your request)
+      const turn12 = Number(document.getElementById('turn12').value) || 0;
       const next30 = Number(document.getElementById('next30').value) || 0;
       const avgMonthlyInput = Number(document.getElementById('avgMonthly').value);
-      const hasAvg = !isNaN(avgMonthlyInput) && document.getElementById('avgMonthly').value !== '';
+      const hasAvg = document.getElementById('avgMonthly').value !== '' && !isNaN(avgMonthlyInput);
       const growthPct = Number(document.getElementById('growthPct').value) || 0;
 
       // Illustration inputs
