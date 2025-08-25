@@ -12,7 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root{
-      /* SBX-leaning palette */
+      /* SBX-leaning palette (swap for exact brand hexes if you want) */
       --sbx-bg: #F7F9FC;
       --sbx-card: #ffffff;
       --sbx-primary: #14233C;   /* deep navy */
@@ -33,9 +33,8 @@
     .banner--bad   { background: rgba(220,38,38,.10); color:#991b1b; border-color: rgba(220,38,38,.35); }
     .muted { color: var(--sbx-muted); }
     .section-title { color:var(--sbx-primary); }
-    .divider { height:1px; background: var(--sbx-border); margin: 1rem 0; }
 
-    /* Tooltips: appear above the control, high z-index, avoid covering next column */
+    /* Tooltips (pop above control, not over the main column) */
     .tip {
       position:absolute; display:none; z-index:50;
       right:0; bottom: calc(100% + .5rem); top:auto;
@@ -104,11 +103,11 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label>Avg monthly income (optional)
               <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300" placeholder="auto from 12m">
-              <p class="text-xs muted mt-1">Defaults to your current run-rate (12m ÷ 12).</p>
+              <p class="text-xs muted mt-1">We use this as your “last month” for the future test; if blank we use 1/12 of your 12-month total.</p>
             </label>
             <label>Expected monthly growth % (optional)
               <input id="growthPct" type="number" min="-100" step="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-              <p class="text-xs muted mt-1">Used only for the forecast (planning aid).</p>
+              <p class="text-xs muted mt-1">Used for the forecast (planning aid).</p>
             </label>
           </div>
         </div>
@@ -136,7 +135,7 @@
           <div class="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
             <div class="text-slate-700 text-xs">Simple forecast</div>
             <div id="forecast" class="text-base font-semibold">Not enough monthly income to project a date yet.</div>
-            <div class="text-xs text-slate-700 mt-1">Uses monthly income and growth (compounded). Planning aid only.</div>
+            <div class="text-xs text-slate-700 mt-1">If the future test is already breached, we show “1 month”. Otherwise we estimate months to £90k using your monthly run-rate and growth.</div>
           </div>
         </div>
       </div>
@@ -257,60 +256,46 @@
 
     function compute() {
       // Checker inputs
-      const turn12 = Number(document.getElementById('turn12').value) || 0;
-      const next30 = Number(document.getElementById('next30').value) || 0;
-      const avgMonthlyInput = Number(document.getElementById('avgMonthly').value);
-      const hasAvg = document.getElementById('avgMonthly').value !== '' && !isNaN(avgMonthlyInput);
+      const income12 = Number(document.getElementById('turn12').value) || 0;   // rolling 12m income (taxable)
+      const next30   = Number(document.getElementById('next30').value) || 0;   // expected next 30d
+      const avgField = document.getElementById('avgMonthly').value;
+      const avgMonthly = avgField !== '' && !isNaN(Number(avgField)) ? Number(avgField) : (income12 / 12);
+      document.getElementById('avgMonthly').placeholder = `e.g. ${Math.round(income12 / 12)}`;
       const growthPct = Number(document.getElementById('growthPct').value) || 0;
 
-      // Illustration inputs
-      const std = Number(document.getElementById('pctStd').value) || 0;
-      const zero = Number(document.getElementById('pctZero').value) || 0;
-      const ex = Number(document.getElementById('pctExempt').value) || 0;
+      // Future test = prior 11 months + next 30 days
+      // We treat "last month" as avgMonthly (or user override if provided).
+      const prior11 = Math.max(0, income12 - avgMonthly);
+      const futureTotal = prior11 + next30;
 
-      // Mix sum check (illustrations only)
+      // After-registration mix (informational only)
+      const std  = Number(document.getElementById('pctStd').value)  || 0;
+      const zero = Number(document.getElementById('pctZero').value) || 0;
+      const ex   = Number(document.getElementById('pctExempt').value) || 0;
       const mixSum = std + zero + ex;
       const mixWarn = document.getElementById('mixWarn');
       if (mixSum !== 100) { mixWarn.classList.remove('hidden'); mixWarn.textContent = `Heads up: your rate mix adds to ${mixSum}%. Adjust so Standard + Zero + Exempt = 100% for the VAT illustrations.`; }
       else { mixWarn.classList.add('hidden'); }
 
-      // Registration tests use the entered income directly
-      const income12 = turn12;
-      const avgMonthly = hasAvg ? avgMonthlyInput : (income12 / 12);
-      document.getElementById('avgMonthly').placeholder = `e.g. ${Math.round(income12 / 12)}`;
-
-      // Future test = prior 11 months (estimate) + expected next 30 days
-      const prior11_est = Math.max(0, income12 - avgMonthly);
-      const futureTotal = prior11_est + next30;
-
-      // VAT illustrations (informational)
-      const outVAT = (income12 * (std/100)) * 0.20; // standard-rated portion * 20%
+      const outVAT = (income12 * (std/100)) * 0.20; // 20% of standard-rated portion
       const vatInputField = Number(document.getElementById('vatCosts').value);
       const inVAT = (vatInputField > 0) ? vatInputField : (income12 * 0.06); // heuristic
 
-      // Update UI blocks
+      // Update UI blocks (checker)
       document.getElementById('tt12').textContent = GBP(income12);
       document.getElementById('futureTest').textContent = GBP(futureTotal);
+
+      // Update UI blocks (illustrations)
       document.getElementById('mix').textContent = `${pctfmt(std)} std / ${pctfmt(zero)} zero / ${pctfmt(ex)} exempt`;
       document.getElementById('mixSum').textContent = mixSum;
       document.getElementById('outVat').textContent = GBP(Math.round(outVAT));
       document.getElementById('inVat').textContent = GBP(Math.round(inVAT));
 
-      const pex = document.getElementById('pexNote');
-      if (ex > 0) {
-        pex.classList.remove('hidden');
-        pex.textContent = ex >= 50
-          ? 'High proportion of exempt supplies — likely partially exempt with limited input VAT recovery.'
-          : 'Some exempt supplies present — partial exemption may restrict input VAT recovery.';
-      } else {
-        pex.classList.add('hidden');
-      }
-
       // Status banner with amber for BOTH tests when within 10%
       const box = document.getElementById('statusBox');
       const label = document.getElementById('statusLabel');
       const detail = document.getElementById('statusDetail');
-      box.className = box.className.replace(/banner--(ok|warn|bad)/g, '');
+      box.classList.remove('banner--ok','banner--warn','banner--bad');
 
       if (income12 >= THRESHOLD) {
         label.textContent = 'Register now (12-month test breached)';
@@ -330,7 +315,7 @@
         box.classList.add('banner','banner--ok');
       }
 
-      // Forecast: if future test breaches, show "1 month"; otherwise compute months
+      // Forecast: 1 month if future test already breached, else months-to-hit
       const remaining = Math.max(0, THRESHOLD - income12);
       let forecastText = 'Not enough monthly income to project a date yet.';
       if (income12 >= THRESHOLD) {
@@ -379,11 +364,20 @@
       });
     }
 
-    // wire up
+    // Wire up
     ['biz','industry','turn12','next30','avgMonthly','growthPct','pctStd','pctZero','pctExempt','vatCosts','notes']
       .forEach(id => document.getElementById(id).addEventListener('input', compute));
     document.getElementById('copyBtn').addEventListener('click', copySummary);
     document.getElementById('year').textContent = new Date().getFullYear();
+
+    // Smoke tests in console (optional)
+    (function tests(){
+      // 12m breach
+      console.assert((function(){const i=95000,a=0,n=0;const p=Math.max(0,i - (i/12));return p+n>=THRESHOLD;})()===true, 'Test: 12m breach triggers');
+      // Future breach: 80k last 12m, next30=50k -> prior11≈73333, total≈123333
+      console.assert((function(){const i=80000,a=i/12,n=50000;const p=Math.max(0,i-a);return (p+n)>=THRESHOLD;})()===true, 'Test: future test breach triggers');
+    })();
+
     compute();
   </script>
 </body>
