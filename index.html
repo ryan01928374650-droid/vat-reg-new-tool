@@ -4,14 +4,19 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SBX VAT Registration Checker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root { color-scheme: light; }
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
-    .tip { position: absolute; display:none; z-index:20; right:0; top:1.75rem; width:16rem; font-size:.75rem;
-           background:#fff; border:1px solid #e5e7eb; border-radius:.5rem; padding:.5rem; box-shadow:0 5px 15px rgba(0,0,0,.05); }
+    body { font-family: 'Montserrat', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+    .tip { position:absolute; display:none; z-index:20; right:.5rem; top:1.75rem; width:16rem; font-size:.75rem;
+           background:#fff; border:1px solid #e5e7eb; border-radius:.5rem; padding:.5rem; box-shadow:0 5px 15px rgba(0,0,0,.06);}
     .group:hover .tip { display:block; }
     .badge { font-size:.7rem; border-radius:.375rem; padding:.15rem .4rem; border:1px solid rgba(0,0,0,.08); }
+    .info-dot { position:absolute; right:.5rem; top:.5rem; width:1.1rem; height:1.1rem; border-radius:9999px;
+                border:1px solid #cbd5e1; color:#94a3b8; font-size:.7rem; display:grid; place-items:center; cursor:help; background:#fff; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 text-slate-800">
@@ -144,12 +149,20 @@
             <div id="mix" class="text-base font-semibold">100.0% std / 0.0% zero / 0.0% exempt</div>
             <div class="text-xs text-slate-500 mt-1">Sum: <span id="mixSum">100</span>%</div>
           </div>
-          <div class="rounded-xl border border-slate-200 p-3">
+
+          <!-- Output VAT with tooltip -->
+          <div class="rounded-xl border border-slate-200 p-3 relative group">
+            <div class="info-dot">i</div>
+            <div class="tip"><b>Output VAT</b>: VAT you charge customers on standard-rated sales (shown illustratively at 20% of your standard-rated portion).</div>
             <div class="text-slate-500 text-xs">Est. output VAT (illustrative)</div>
             <div id="outVat" class="text-base font-semibold">£0</div>
             <div class="text-xs text-slate-500 mt-1">Assumes 20% on standard-rated sales</div>
           </div>
-          <div class="rounded-xl border border-slate-200 p-3">
+
+          <!-- Input VAT with tooltip -->
+          <div class="rounded-xl border border-slate-200 p-3 relative group">
+            <div class="info-dot">i</div>
+            <div class="tip"><b>Input VAT</b>: VAT you can reclaim on business costs (either your input or a cautious heuristic).</div>
             <div class="text-slate-500 text-xs">Est. input VAT recoverable</div>
             <div id="inVat" class="text-base font-semibold">£0</div>
             <div class="text-xs text-slate-500 mt-1">User input or heuristic</div>
@@ -184,10 +197,7 @@
           <li>Sector-specific VAT treatment guidance (e.g., aesthetics, trades)</li>
           <li>Partial exemption review if needed</li>
         </ul>
-        <div class="mt-4 flex gap-2">
-          <a href="mailto:ryan@sbxaccountants.com?subject=VAT%20Checker%20Follow-up" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-sm hover:opacity-90">Email SBX</a>
-          <a href="tel:+442070461730" class="px-4 py-2 rounded-xl border border-slate-300 text-sm hover:bg-slate-50">Call 020 7046 1730</a>
-        </div>
+        <!-- Email/Call buttons intentionally removed for Duda embedding -->
       </div>
     </section>
   </main>
