@@ -12,8 +12,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root{
-      /* SBX-leaning palette — adjust freely if you have exact brand hexes */
-      --sbx-bg: #F7F9FC;        /* soft light */
+      /* SBX-leaning palette */
+      --sbx-bg: #F7F9FC;
       --sbx-card: #ffffff;
       --sbx-primary: #14233C;   /* deep navy */
       --sbx-accent: #4257D6;    /* indigo */
@@ -23,7 +23,7 @@
       --sbx-danger: #DC2626;    /* red-600 */
       --sbx-border: #E5E7EB;    /* slate-200 */
       --sbx-text: #0F172A;      /* slate-900 */
-      --sbx-muted: #334155;     /* slate-700 (stronger contrast than 500) */
+      --sbx-muted: #334155;     /* slate-700 */
     }
     body { font-family: 'Montserrat', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: var(--sbx-bg); color: var(--sbx-text); }
     .tip { position:absolute; display:none; z-index:20; right:.5rem; top:1.75rem; width:18rem; font-size:.78rem;
@@ -38,188 +38,186 @@
     .banner--warn  { background: rgba(217,119,6,.10); color:#92400e; border-color: rgba(217,119,6,.35); }
     .banner--bad   { background: rgba(220,38,38,.10); color:#991b1b; border-color: rgba(220,38,38,.35); }
     .muted { color: var(--sbx-muted); }
+    .section-title { color:var(--sbx-primary); }
+    .divider { height:1px; background: var(--sbx-border); margin: 1rem 0; }
   </style>
 </head>
 <body>
   <header class="max-w-5xl mx-auto px-4 pt-10 pb-4">
     <div>
-      <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight" style="color:var(--sbx-primary)">VAT Registration Checker</h1>
+      <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight section-title">VAT Registration Checker</h1>
       <p class="text-sm muted -mt-0.5">Quick VAT registration check (UK)</p>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 pb-16">
-    <div class="grid md:grid-cols-2 gap-6">
-      <!-- Inputs -->
-      <section class="card p-6">
-        <h2 class="text-lg font-semibold mb-4" style="color:var(--sbx-primary)">Inputs</h2>
+  <main class="max-w-5xl mx-auto px-4 pb-16 space-y-6">
+    <!-- ====== Registration checker ====== -->
+    <section class="card p-6">
+      <h2 class="text-lg font-semibold mb-4 section-title">Registration checker</h2>
 
-        <div class="grid grid-cols-1 gap-4 text-sm">
-          <label>Business name (optional)
-            <input id="biz" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+      <!-- Inputs (checker) -->
+      <div class="grid grid-cols-1 gap-4 text-sm">
+        <label>Business name (optional)
+          <input id="biz" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+        </label>
+
+        <label>Industry
+          <select id="industry" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+            <option>Trades / Construction</option>
+            <option>Advanced Aesthetics / Beauty</option>
+            <option>Medical / Healthcare</option>
+            <option>Consultancy / Contracting</option>
+            <option>IT & Software</option>
+            <option>E-commerce / Retail</option>
+            <option>Hospitality</option>
+            <option>Property & Lettings</option>
+            <option>Creative / Media</option>
+            <option>Professional Services</option>
+            <option>Manufacturing</option>
+            <option>Charities / Non-profit</option>
+            <option>Education / Training</option>
+            <option>Transport / Logistics</option>
+            <option>Agriculture / Farming</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <label>Rolling 12-month income (excl. VAT)
+          <input id="turn12" type="number" min="0" step="100" value="80000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+        </label>
+
+        <label class="flex flex-col">Expected income in next 30 days (excl. VAT)
+          <input id="next30" type="number" min="0" step="100" value="5000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+          <span class="mt-1 text-xs muted">
+            <span class="badge">Future test</span> We check <b>last 11 months (estimated) + next 30 days</b> against the £90k threshold.
+          </span>
+        </label>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label>Avg monthly income (optional)
+            <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300" placeholder="auto from 12m">
+            <p class="text-xs muted mt-1">Defaults to your current run-rate (12m ÷ 12).</p>
           </label>
-
-          <label>Industry
-            <select id="industry" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-              <option>Trades / Construction</option>
-              <option>Advanced Aesthetics / Beauty</option>
-              <option>Medical / Healthcare</option>
-              <option>Consultancy / Contracting</option>
-              <option>IT & Software</option>
-              <option>E-commerce / Retail</option>
-              <option>Hospitality</option>
-              <option>Property & Lettings</option>
-              <option>Creative / Media</option>
-              <option>Professional Services</option>
-              <option>Manufacturing</option>
-              <option>Charities / Non-profit</option>
-              <option>Education / Training</option>
-              <option>Transport / Logistics</option>
-              <option>Agriculture / Farming</option>
-              <option>Other</option>
-            </select>
-          </label>
-
-          <!-- 12m taxable first -->
-          <label>Rolling 12-month <b>taxable</b> turnover (excl. VAT)
-            <input id="turn12" type="number" min="0" step="100" value="80000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-            <p class="text-xs muted mt-1">This should include standard-rated and zero-rated sales, exclude exempt.</p>
-          </label>
-
-          <!-- Then next 30 days directly under it -->
-          <label class="flex flex-col">Expected taxable sales in next 30 days (excl. VAT)
-            <input id="next30" type="number" min="0" step="100" value="5000" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-            <span class="mt-1 text-xs muted">
-              <span class="badge">Future test</span> We check <b>last 11 months (estimated) + next 30 days</b> against the £90k threshold.
-            </span>
-          </label>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <label>Avg monthly taxable sales (optional)
-              <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300" placeholder="auto from 12m">
-              <p class="text-xs muted mt-1">Defaults to your current run-rate (12m taxable ÷ 12).</p>
-            </label>
-            <label>Expected monthly growth % (optional)
-              <input id="growthPct" type="number" min="-100" step="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-              <p class="text-xs muted mt-1">Used only for the forecast (planning aid).</p>
-            </label>
-          </div>
-
-          <!-- % mix moved below -->
-          <div class="grid grid-cols-3 gap-3">
-            <label class="flex flex-col">% Standard-rated (informational)
-              <div class="relative group">
-                <input id="pctStd" type="number" min="0" max="100" step="0.5" value="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-                <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-                <div class="tip"><b>Standard-rated (20%)</b>: used here only to illustrate output VAT after registration. Does <u>not</u> affect the registration tests.</div>
-              </div>
-            </label>
-            <label class="flex flex-col">% Zero-rated (informational)
-              <div class="relative group">
-                <input id="pctZero" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-                <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-                <div class="tip"><b>Zero-rated (0%)</b>: included in taxable turnover for the tests, but % here only informs the VAT illustration.</div>
-              </div>
-            </label>
-            <label class="flex flex-col">% Exempt (informational)
-              <div class="relative group">
-                <input id="pctExempt" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-                <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
-                <div class="tip"><b>Exempt</b>: excluded from taxable turnover for the tests. % here only informs the VAT illustration / partial exemption note.</div>
-              </div>
-            </label>
-          </div>
-          <p class="text-xs muted -mt-2">Percentages above are for <b>illustration only</b> and do not alter the registration tests.</p>
-          <div id="mixWarn" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2"></div>
-
-          <label>Annual VAT you expect to reclaim (optional, £ of VAT — not gross cost)
-            <input id="vatCosts" type="number" min="0" step="50" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
-            <p class="text-xs muted mt-1">If blank, we’ll use a cautious heuristic.</p>
-          </label>
-
-          <label>Notes (optional)
-            <textarea id="notes" rows="3" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
+          <label>Expected monthly growth % (optional)
+            <input id="growthPct" type="number" min="-100" step="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+            <p class="text-xs muted mt-1">Used only for the forecast (planning aid).</p>
           </label>
         </div>
-      </section>
-
-      <!-- Output -->
-      <section class="card p-6 flex flex-col">
-        <h2 class="text-lg font-semibold mb-4" style="color:var(--sbx-primary)">Assessment</h2>
-        <div id="statusBox" class="banner banner--ok mb-4">
-          <div id="statusLabel" class="text-sm font-semibold">No compulsory registration yet</div>
-          <div id="statusDetail" class="text-xs opacity-90">Your taxable turnover is below the £90,000 threshold. Keep monitoring your rolling 12-month figures.</div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 text-sm">
-          <div class="rounded-xl border border-slate-200 p-3">
-            <div class="text-slate-700 text-xs">Taxable turnover (rolling 12m)</div>
-            <div id="tt12" class="text-base font-semibold">£0</div>
-            <div class="text-xs text-slate-700 mt-1">Threshold: £90,000</div>
-          </div>
-          <div class="rounded-xl border border-slate-200 p-3">
-            <div class="text-slate-700 text-xs">Future test (last 11m est. + next 30d)</div>
-            <div id="futureTest" class="text-base font-semibold">£0</div>
-            <div class="text-xs text-slate-700 mt-1">Must register if ≥ £90,000</div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3 text-sm mt-3">
-          <div class="rounded-xl border border-slate-200 p-3">
-            <div class="text-slate-700 text-xs">Mix</div>
-            <div id="mix" class="text-base font-semibold">100.0% std / 0.0% zero / 0.0% exempt</div>
-            <div class="text-xs text-slate-700 mt-1">Sum: <span id="mixSum">100</span>%</div>
-          </div>
-
-          <!-- Output VAT with tooltip -->
-          <div class="rounded-xl border border-slate-200 p-3 relative group">
-            <div class="info-dot">i</div>
-            <div class="tip"><b>Output VAT</b>: VAT you charge customers on standard-rated sales (illustrative: 20% of the standard-rated portion of your taxable sales).</div>
-            <div class="text-slate-700 text-xs">Est. output VAT (illustrative)</div>
-            <div id="outVat" class="text-base font-semibold">£0</div>
-            <div class="text-xs text-slate-700 mt-1">Assumes 20% on standard-rated sales</div>
-          </div>
-
-          <!-- Input VAT with tooltip -->
-          <div class="rounded-xl border border-slate-200 p-3 relative group">
-            <div class="info-dot">i</div>
-            <div class="tip"><b>Input VAT</b>: VAT you can reclaim on business costs (either your input or a cautious heuristic).</div>
-            <div class="text-slate-700 text-xs">Est. input VAT recoverable</div>
-            <div id="inVat" class="text-base font-semibold">£0</div>
-            <div class="text-xs text-slate-700 mt-1">User input or heuristic</div>
-          </div>
-        </div>
-
-        <div class="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
-          <div class="text-slate-700 text-xs">Simple forecast</div>
-          <div id="forecast" class="text-base font-semibold">Not enough monthly taxable sales to project a date yet.</div>
-          <div class="text-xs text-slate-700 mt-1">Uses taxable monthly sales and monthly growth (compounded). Planning aid only.</div>
-        </div>
-
-        <div id="pexNote" class="hidden mt-3 text-xs text-indigo-900 bg-indigo-50 border border-indigo-200 rounded-xl p-3"></div>
-
-        <div class="mt-4 flex flex-wrap gap-2">
-          <button id="copyBtn" class="px-4 py-2 rounded-xl" style="background:var(--sbx-primary); color:white">Copy summary</button>
-          <button onclick="window.print()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50">Print / Save PDF</button>
-        </div>
-
-        <div class="mt-6 text-xs muted">
-          This tool provides general guidance only and does not constitute tax advice. VAT rules vary by sector. For personalised advice, contact SBX Accountants.
-        </div>
-      </section>
-    </div>
-
-    <section id="contact" class="mt-8">
-      <div class="card p-6">
-        <h3 class="text-lg font-semibold mb-2" style="color:var(--sbx-primary)">Next steps with SBX</h3>
-        <p class="text-sm muted mb-4">Want us to sanity-check your position or handle registration? We’ll confirm whether you must register now and set you up for smooth VAT returns.</p>
-        <ul class="text-sm list-disc pl-5 text-slate-800 space-y-1">
-          <li>Threshold monitoring template (rolling 12 months)</li>
-          <li>Sector-specific VAT treatment guidance (e.g., aesthetics, trades)</li>
-          <li>Partial exemption review if needed</li>
-        </ul>
-        <!-- Contact buttons removed for Duda embedding -->
       </div>
+
+      <!-- Status + figures -->
+      <div class="divider"></div>
+
+      <div id="statusBox" class="banner banner--ok mb-4">
+        <div id="statusLabel" class="text-sm font-semibold">No compulsory registration yet</div>
+        <div id="statusDetail" class="text-xs opacity-90">Your rolling 12-month income is below the £90,000 threshold.</div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <div class="rounded-xl border border-slate-200 p-3">
+          <div class="text-slate-700 text-xs">Rolling 12-month income</div>
+          <div id="tt12" class="text-base font-semibold">£0</div>
+          <div class="text-xs text-slate-700 mt-1">Threshold: £90,000</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 p-3">
+          <div class="text-slate-700 text-xs">Future test (last 11m est. + next 30d)</div>
+          <div id="futureTest" class="text-base font-semibold">£0</div>
+          <div class="text-xs text-slate-700 mt-1">Must register if ≥ £90,000</div>
+        </div>
+      </div>
+
+      <div class="mt-3 rounded-xl border border-slate-200 p-3 text-sm">
+        <div class="text-slate-700 text-xs">Simple forecast</div>
+        <div id="forecast" class="text-base font-semibold">Not enough monthly income to project a date yet.</div>
+        <div class="text-xs text-slate-700 mt-1">Uses monthly income and growth (compounded). Planning aid only.</div>
+      </div>
+    </section>
+
+    <!-- ====== After registration — VAT illustrations ====== -->
+    <section class="card p-6">
+      <h2 class="text-lg font-semibold mb-4 section-title">After registration — VAT illustrations</h2>
+
+      <!-- Mix (informational only) -->
+      <div class="grid grid-cols-3 gap-3 text-sm">
+        <label class="flex flex-col">% Standard-rated (informational)
+          <div class="relative group">
+            <input id="pctStd" type="number" min="0" max="100" step="0.5" value="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+            <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
+            <div class="tip"><b>Standard-rated (20%)</b>: used here only to illustrate output VAT after registration. Does <u>not</u> affect the registration tests.</div>
+          </div>
+        </label>
+        <label class="flex flex-col">% Zero-rated (informational)
+          <div class="relative group">
+            <input id="pctZero" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+            <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
+            <div class="tip"><b>Zero-rated (0%)</b>: included in income, but only informs output VAT illustration here.</div>
+          </div>
+        </label>
+        <label class="flex flex-col">% Exempt (informational)
+          <div class="relative group">
+            <input id="pctExempt" type="number" min="0" max="100" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+            <span class="absolute right-2 top-3 text-slate-400 text-xs border border-slate-300 rounded-full w-5 h-5 grid place-items-center cursor-help">i</span>
+            <div class="tip"><b>Exempt</b>: excluded for output VAT and may restrict input VAT recovery (partial exemption).</div>
+          </div>
+        </label>
+      </div>
+      <p class="text-xs muted -mt-2">Percentages above are for <b>illustration only</b> and do not alter the registration tests.</p>
+      <div id="mixWarn" class="hidden text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2"></div>
+
+      <!-- VAT cards -->
+      <div class="grid grid-cols-3 gap-3 text-sm mt-3">
+        <div class="rounded-xl border border-slate-200 p-3">
+          <div class="text-slate-700 text-xs">Mix</div>
+          <div id="mix" class="text-base font-semibold">100.0% std / 0.0% zero / 0.0% exempt</div>
+          <div class="text-xs text-slate-700 mt-1">Sum: <span id="mixSum">100</span>%</div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 p-3 relative group">
+          <div class="info-dot">i</div>
+          <div class="tip"><b>Output VAT</b>: VAT you charge customers on the standard-rated portion (here shown as 20% × standard-rated income).</div>
+          <div class="text-slate-700 text-xs">Est. output VAT (illustrative)</div>
+          <div id="outVat" class="text-base font-semibold">£0</div>
+          <div class="text-xs text-slate-700 mt-1">Assumes 20% on standard-rated portion</div>
+        </div>
+
+        <div class="rounded-xl border border-slate-200 p-3 relative group">
+          <div class="info-dot">i</div>
+          <div class="tip"><b>Input VAT</b>: VAT you might reclaim on business costs (either your input below or a cautious heuristic).</div>
+          <div class="text-slate-700 text-xs">Est. input VAT recoverable</div>
+          <div id="inVat" class="text-base font-semibold">£0</div>
+          <div class="text-xs text-slate-700 mt-1">User input or heuristic</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <label>Annual VAT you expect to reclaim (optional, £ of VAT — not gross cost)
+          <input id="vatCosts" type="number" min="0" step="50" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
+          <p class="text-xs muted mt-1">If blank, we’ll use a cautious heuristic.</p>
+        </label>
+        <label>Notes (optional)
+          <textarea id="notes" rows="3" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300"></textarea>
+        </label>
+      </div>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button id="copyBtn" class="px-4 py-2 rounded-xl" style="background:var(--sbx-primary); color:white">Copy summary</button>
+        <button onclick="window.print()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50">Print / Save PDF</button>
+      </div>
+
+      <div class="mt-6 text-xs muted">
+        This tool provides general guidance only and does not constitute tax advice. VAT rules vary by sector. For personalised advice, contact SBX Accountants.
+      </div>
+    </section>
+
+    <!-- Next steps text only (no buttons) -->
+    <section class="card p-6">
+      <h3 class="text-lg font-semibold mb-2 section-title">Next steps with SBX</h3>
+      <p class="text-sm muted mb-4">Want us to sanity-check your position or handle registration? We’ll confirm whether you must register now and set you up for smooth VAT returns.</p>
+      <ul class="text-sm list-disc pl-5 text-slate-800 space-y-1">
+        <li>Threshold monitoring template (rolling 12 months)</li>
+        <li>Sector-specific VAT treatment guidance (e.g., aesthetics, trades)</li>
+        <li>Partial exemption review if needed</li>
+      </ul>
     </section>
   </main>
 
@@ -249,38 +247,40 @@
     }
 
     function compute() {
-      const turn12 = Number(document.getElementById('turn12').value) || 0; // already TAXABLE figure
-      const std = Number(document.getElementById('pctStd').value) || 0;
-      const zero = Number(document.getElementById('pctZero').value) || 0;
-      const ex = Number(document.getElementById('pctExempt').value) || 0;
+      // Checker inputs
+      const turn12 = Number(document.getElementById('turn12').value) || 0; // rolling 12m income (as per your request)
       const next30 = Number(document.getElementById('next30').value) || 0;
       const avgMonthlyInput = Number(document.getElementById('avgMonthly').value);
       const hasAvg = !isNaN(avgMonthlyInput) && document.getElementById('avgMonthly').value !== '';
       const growthPct = Number(document.getElementById('growthPct').value) || 0;
 
-      // Mix box guidance (informational only)
+      // Illustration inputs
+      const std = Number(document.getElementById('pctStd').value) || 0;
+      const zero = Number(document.getElementById('pctZero').value) || 0;
+      const ex = Number(document.getElementById('pctExempt').value) || 0;
+
+      // Mix sum check (illustrations only)
       const mixSum = std + zero + ex;
       const mixWarn = document.getElementById('mixWarn');
       if (mixSum !== 100) { mixWarn.classList.remove('hidden'); mixWarn.textContent = `Heads up: your rate mix adds to ${mixSum}%. Adjust so Standard + Zero + Exempt = 100% for the VAT illustrations.`; }
       else { mixWarn.classList.add('hidden'); }
 
-      // Registration tests use TAXABLE figures directly
-      const taxable12 = turn12; // not impacted by percentages
-      const avgTaxableMonthly = hasAvg ? avgMonthlyInput : (taxable12 / 12);
-      document.getElementById('avgMonthly').placeholder = `e.g. ${Math.round(taxable12 / 12)}`;
+      // Registration tests use the entered income directly
+      const income12 = turn12;
+      const avgMonthly = hasAvg ? avgMonthlyInput : (income12 / 12);
+      document.getElementById('avgMonthly').placeholder = `e.g. ${Math.round(income12 / 12)}`;
 
       // Future test = prior 11 months (estimate) + expected next 30 days
-      const prior11_est = Math.max(0, taxable12 - avgTaxableMonthly);
+      const prior11_est = Math.max(0, income12 - avgMonthly);
       const futureTotal = prior11_est + next30;
 
       // VAT illustrations (informational)
-      const outVAT = (taxable12 * (std/100)) * 0.20; // standard-rated portion * 20%
-      const inVAT = (Number(document.getElementById('vatCosts').value) > 0)
-        ? Number(document.getElementById('vatCosts').value)
-        : (taxable12 * 0.06); // cautious heuristic
+      const outVAT = (income12 * (std/100)) * 0.20; // standard-rated portion * 20%
+      const vatInputField = Number(document.getElementById('vatCosts').value);
+      const inVAT = (vatInputField > 0) ? vatInputField : (income12 * 0.06); // heuristic
 
       // Update UI blocks
-      document.getElementById('tt12').textContent = GBP(taxable12);
+      document.getElementById('tt12').textContent = GBP(income12);
       document.getElementById('futureTest').textContent = GBP(futureTotal);
       document.getElementById('mix').textContent = `${pctfmt(std)} std / ${pctfmt(zero)} zero / ${pctfmt(ex)} exempt`;
       document.getElementById('mixSum').textContent = mixSum;
@@ -303,48 +303,47 @@
       const detail = document.getElementById('statusDetail');
       box.className = box.className.replace(/banner--(ok|warn|bad)/g, '');
 
-      if (taxable12 >= THRESHOLD) {
+      if (income12 >= THRESHOLD) {
         label.textContent = 'Register now (12-month test breached)';
-        detail.textContent = 'Your taxable turnover over the past 12 months exceeds £90,000.';
+        detail.textContent = 'Your rolling 12-month income exceeds £90,000.';
         box.classList.add('banner','banner--bad');
       } else if (futureTotal >= THRESHOLD) {
         label.textContent = 'Register now (future test: last 11m + next 30d breached)';
         detail.textContent = 'Your prior 11 months (estimated) plus the next 30 days is expected to exceed £90,000.';
         box.classList.add('banner','banner--bad');
-      } else if (taxable12 >= THRESHOLD * 0.9 || futureTotal >= THRESHOLD * 0.9) {
+      } else if (income12 >= THRESHOLD * 0.9 || futureTotal >= THRESHOLD * 0.9) {
         label.textContent = 'Borderline — monitor closely';
         detail.textContent = 'You’re within 10% of the threshold on current or projected figures. Track weekly.';
         box.classList.add('banner','banner--warn');
       } else {
         label.textContent = 'No compulsory registration yet';
-        detail.textContent = 'Your taxable turnover is below the £90,000 threshold. Keep monitoring your rolling 12-month figures.';
+        detail.textContent = 'Your rolling 12-month income is below the £90,000 threshold.';
         box.classList.add('banner','banner--ok');
       }
 
       // Forecast: if future test breaches, show "1 month"; otherwise compute months
-      const remaining = Math.max(0, THRESHOLD - taxable12);
-      let forecastText = 'Not enough monthly taxable sales to project a date yet.';
-      if (taxable12 >= THRESHOLD) {
+      const remaining = Math.max(0, THRESHOLD - income12);
+      let forecastText = 'Not enough monthly income to project a date yet.';
+      if (income12 >= THRESHOLD) {
         forecastText = 'Already at/over the threshold on current inputs.';
       } else if (futureTotal >= THRESHOLD) {
         forecastText = 'Approx 1 month(s) to hit £90,000 at your run-rate.';
-      } else if (avgTaxableMonthly > 0 || growthPct > 0) {
+      } else if (avgMonthly > 0 || growthPct > 0) {
         const g = (growthPct || 0) / 100;
-        const months = monthsToHit(remaining, avgTaxableMonthly, g);
+        const months = monthsToHit(remaining, avgMonthly, g);
         forecastText = (months != null)
           ? `Approx ${months} month(s) to hit £90,000 at your run-rate.`
-          : 'Not enough monthly taxable sales to project a date yet.';
+          : 'Not enough monthly income to project a date yet.';
       }
       document.getElementById('forecast').textContent = forecastText;
 
       // Save for copy
       window.__sbx = {
-        turn12, std, zero, ex, taxable12,
-        next30, futureTotal,
+        income12, next30, futureTotal,
+        std, zero, ex, outVAT, inVAT,
         business: document.getElementById('biz').value || '(not provided)',
         industry: document.getElementById('industry').value,
-        notes: document.getElementById('notes').value || 'n/a',
-        outVAT, inVAT
+        notes: document.getElementById('notes').value || 'n/a'
       };
     }
 
@@ -354,7 +353,7 @@
         'SBX VAT Registration Checker — Summary',
         `Business: ${s.business || '(not provided)'}`,
         `Industry: ${s.industry || ''}`,
-        `Rolling 12-month TAXABLE turnover: ${GBP(s.turn12||0)}`,
+        `Rolling 12-month income: ${GBP(s.income12||0)}`,
         `Future test (last 11m est. + next 30d): ${GBP(s.futureTotal||0)}`,
         `VAT illustration mix: ${(s.std||0).toFixed?.(1)||s.std||0}% standard / ${(s.zero||0).toFixed?.(1)||s.zero||0}% zero / ${(s.ex||0).toFixed?.(1)||s.ex||0}% exempt`,
         `Est. output VAT: ${GBP(Math.round(s.outVAT||0))}`,
@@ -372,7 +371,7 @@
     }
 
     // wire up
-    ['biz','industry','turn12','pctStd','pctZero','pctExempt','next30','avgMonthly','growthPct','vatCosts','notes']
+    ['biz','industry','turn12','next30','avgMonthly','growthPct','pctStd','pctZero','pctExempt','vatCosts','notes']
       .forEach(id => document.getElementById(id).addEventListener('input', compute));
     document.getElementById('copyBtn').addEventListener('click', copySummary);
     document.getElementById('year').textContent = new Date().getFullYear();
