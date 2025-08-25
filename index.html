@@ -12,7 +12,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root{
-      /* SBX-leaning palette (swap for exact brand hexes if you want) */
+      /* SBX-leaning palette */
       --sbx-bg: #F7F9FC;
       --sbx-card: #ffffff;
       --sbx-primary: #14233C;   /* deep navy */
@@ -103,7 +103,8 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label>Avg monthly income (optional)
               <input id="avgMonthly" type="number" min="0" step="100" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300" placeholder="auto from 12m">
-              <p class="text-xs muted mt-1">We use this as your “last month” for the future test; if blank we use 1/12 of your 12-month total.</p>
+              <p class="text-xs muted mt-1">Used as your “last month” for the future test; if blank we use 1/12 of your 12-month total.</p>
+              <div id="avgWarn" class="hidden mt-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2"></div>
             </label>
             <label>Expected monthly growth % (optional)
               <input id="growthPct" type="number" min="-100" step="1" value="0" class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-300">
@@ -258,13 +259,33 @@
       // Checker inputs
       const income12 = Number(document.getElementById('turn12').value) || 0;   // rolling 12m income (taxable)
       const next30   = Number(document.getElementById('next30').value) || 0;   // expected next 30d
-      const avgField = document.getElementById('avgMonthly').value;
-      const avgMonthly = avgField !== '' && !isNaN(Number(avgField)) ? Number(avgField) : (income12 / 12);
+
+      // Avg monthly handling (cap and warn)
+      const avgFieldRaw = document.getElementById('avgMonthly').value;
+      const avgWarn = document.getElementById('avgWarn');
+      let avgMonthly;
+      if (avgFieldRaw !== '' && !isNaN(Number(avgFieldRaw))) {
+        const raw = Math.max(0, Number(avgFieldRaw));
+        const capped = Math.min(raw, income12); // <-- prevent last-month proxy exceeding 12m total
+        avgMonthly = capped;
+        if (raw > income12) {
+          avgWarn.classList.remove('hidden');
+          avgWarn.textContent = `Avg monthly can’t exceed your 12-month total (£${Math.round(income12).toLocaleString('en-GB')}). We capped it to £${Math.round(capped).toLocaleString('en-GB')}.`;
+        } else {
+          avgWarn.classList.add('hidden');
+          avgWarn.textContent = '';
+        }
+      } else {
+        avgMonthly = income12 / 12;
+        avgWarn.classList.add('hidden');
+        avgWarn.textContent = '';
+      }
       document.getElementById('avgMonthly').placeholder = `e.g. ${Math.round(income12 / 12)}`;
+
       const growthPct = Number(document.getElementById('growthPct').value) || 0;
 
       // Future test = prior 11 months + next 30 days
-      // We treat "last month" as avgMonthly (or user override if provided).
+      // Treat "last month" as avgMonthly (capped). Ensure non-negative.
       const prior11 = Math.max(0, income12 - avgMonthly);
       const futureTotal = prior11 + next30;
 
@@ -370,12 +391,12 @@
     document.getElementById('copyBtn').addEventListener('click', copySummary);
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Smoke tests in console (optional)
+    // Quick logic checks (console)
     (function tests(){
-      // 12m breach
-      console.assert((function(){const i=95000,a=0,n=0;const p=Math.max(0,i - (i/12));return p+n>=THRESHOLD;})()===true, 'Test: 12m breach triggers');
-      // Future breach: 80k last 12m, next30=50k -> prior11≈73333, total≈123333
-      console.assert((function(){const i=80000,a=i/12,n=50000;const p=Math.max(0,i-a);return (p+n)>=THRESHOLD;})()===true, 'Test: future test breach triggers');
+      // Future breach: 80k last 12m, avg=~6.7k, next30=50k -> prior11≈73,333; total≈123,333
+      console.assert((function(){const i=80000,a=i/12,n=50000;const p=Math.max(0,i - Math.min(a,i));return (p+n)>=THRESHOLD;})()===true, 'Future test breach should trigger');
+      // Avg monthly cap: if avg typed > income12, it caps and future test still sensible
+      console.assert((function(){const i=60000,a=200000,n=35000;const cap=Math.min(a,i);const p=Math.max(0,i-cap);return (p+n)===35000;})(), 'Avg monthly capped to 12m total');
     })();
 
     compute();
